@@ -123,7 +123,6 @@ export class App {
     this.hud.onQuality(() => {
       const next = this.perf.cycle();
       this.hud.setQuality(next);
-      // Soft adapt — rebuilding city is heavy; adjust renderer/post/particle visibility
       this.applyQuality(this.perf.settings);
     });
     this.perf.onChange((level, settings) => {
@@ -131,7 +130,6 @@ export class App {
       this.applyQuality(settings);
     });
 
-    // Unlock audio on first gesture
     const unlock = () => {
       void this.audio.resume().then(() => this.hud.setAudio(true));
       window.removeEventListener('pointerdown', unlock);
@@ -171,17 +169,21 @@ export class App {
 
     this.camera.update(progress, knobs);
 
-    // Atmosphere evolution
-    const fogDensity = 0.0014 + knobs.fracture * 0.0006 - knobs.finale * 0.0012;
-    const fogColor = knobs.finale > 0.3 ? 0x02040a : knobs.core > 0.4 ? 0x120814 : 0x070b16;
-    this.scenes.setFog(Math.max(0.0002, fogDensity), fogColor);
+    // Atmosphere evolution — cold night → fracture magenta → void → finale
+    const fogDensity =
+      0.00125 + knobs.fracture * 0.0007 + knobs.ghost * 0.0004 - knobs.finale * 0.0011;
+    let fogColor = 0x060a14;
+    if (knobs.finale > 0.35) fogColor = 0x010208;
+    else if (knobs.silence > 0.3) fogColor = 0x04060c;
+    else if (knobs.core > 0.4) fogColor = 0x100814;
+    else if (knobs.fracture > 0.3) fogColor = 0x0a0814;
+    this.scenes.setFog(Math.max(0.00015, fogDensity), fogColor);
 
     const rim = this.scenes.getFractureLight();
-    rim.intensity = knobs.fracture * 2.5 + knobs.core * 4;
+    rim.intensity = knobs.fracture * 2.8 + knobs.core * 5.5;
     rim.position.copy(this.fracture.corePos);
 
-    // City dissolve → hide as finale takes over
-    this.cityFade = 1 - knobs.finale * 0.95 - knobs.dissolve * 0.4;
+    this.cityFade = 1 - knobs.finale * 0.95 - knobs.dissolve * 0.45;
     this.city.setVisible(this.cityFade > 0.05);
     this.scenes.cityRoot.visible = this.cityFade > 0.05;
     this.scenes.finaleRoot.visible = knobs.finale > 0.05 || knobs.silence > 0.5;
@@ -197,13 +199,13 @@ export class App {
     this.particles.setStrength(Math.max(knobs.fracture, knobs.core));
     this.particles.update(dt, this.fracture.corePos);
 
-    this.fracture.setIntensity(Math.max(knobs.fracture * 0.4, knobs.core));
+    this.fracture.setIntensity(Math.max(knobs.fracture * 0.45, knobs.core));
     this.fracture.update(time);
 
     this.gravity.setStrength(knobs.gravity);
     this.gravity.update(time);
 
-    this.portals.setStrength(Math.max(knobs.ghost, knobs.fold * 0.5));
+    this.portals.setStrength(Math.max(knobs.ghost, knobs.fold * 0.55));
     this.portals.update(time);
 
     this.collapse.setStrength(knobs.finale);

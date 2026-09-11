@@ -1,36 +1,46 @@
 import * as THREE from 'three';
 
-/** Floating debris chunks that reverse gravity during failure */
+/** Large-scale floating debris — districts coming apart, readable on scroll */
 export class GravitySystem {
   readonly group = new THREE.Group();
   private chunks: THREE.Mesh[] = [];
+  private base: Array<{ x: number; y: number; z: number; rx: number; ry: number; rz: number }> = [];
   private strength = 0;
-  private baseY: number[] = [];
 
   constructor() {
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x121820,
-      emissive: 0x4de8ff,
-      emissiveIntensity: 0.08,
-      roughness: 0.9,
-      metalness: 0.2,
+      color: 0x0c121a,
+      emissive: 0x1a3048,
+      emissiveIntensity: 0.12,
+      roughness: 0.88,
+      metalness: 0.25,
     });
-    for (let i = 0; i < 60; i++) {
-      const m = new THREE.Mesh(
-        new THREE.BoxGeometry(
-          2 + Math.random() * 8,
-          2 + Math.random() * 6,
-          2 + Math.random() * 8
-        ),
-        mat
-      );
-      m.position.set(
-        (Math.random() - 0.5) * 200,
-        10 + Math.random() * 80,
-        (Math.random() - 0.5) * 200
-      );
-      m.rotation.set(Math.random(), Math.random(), Math.random());
-      this.baseY.push(m.position.y);
+    const glowMat = new THREE.MeshStandardMaterial({
+      color: 0x0a1018,
+      emissive: 0x4de8ff,
+      emissiveIntensity: 0.25,
+      roughness: 0.7,
+      metalness: 0.35,
+    });
+
+    for (let i = 0; i < 90; i++) {
+      const w = 3 + Math.random() * 14;
+      const h = 2 + Math.random() * 18;
+      const d = 3 + Math.random() * 12;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), Math.random() > 0.7 ? glowMat : mat);
+      const x = (Math.random() - 0.5) * 280;
+      const y = 8 + Math.random() * 120;
+      const z = (Math.random() - 0.5) * 280;
+      m.position.set(x, y, z);
+      m.rotation.set(Math.random() * 0.4, Math.random() * Math.PI, Math.random() * 0.4);
+      this.base.push({
+        x,
+        y,
+        z,
+        rx: m.rotation.x,
+        ry: m.rotation.y,
+        rz: m.rotation.z,
+      });
       this.chunks.push(m);
       this.group.add(m);
     }
@@ -44,11 +54,19 @@ export class GravitySystem {
 
   update(time: number): void {
     if (this.strength < 0.02) return;
+    const s = this.strength;
     for (let i = 0; i < this.chunks.length; i++) {
       const c = this.chunks[i];
-      c.position.y = this.baseY[i] + this.strength * (20 + (i % 7) * 8) * Math.sin(time * 0.4 + i);
-      c.rotation.x += 0.01 * this.strength;
-      c.rotation.z += 0.008 * this.strength;
+      const b = this.base[i];
+      // Large lift — city-scale, not jitter
+      const lift = s * (30 + (i % 9) * 12);
+      const drift = s * 18;
+      c.position.x = b.x + Math.sin(time * 0.25 + i * 0.4) * drift;
+      c.position.y = b.y + lift * (0.6 + 0.4 * Math.sin(time * 0.35 + i));
+      c.position.z = b.z + Math.cos(time * 0.22 + i * 0.3) * drift;
+      c.rotation.x = b.rx + time * 0.15 * s * ((i % 3) - 1);
+      c.rotation.y = b.ry + time * 0.12 * s;
+      c.rotation.z = b.rz + time * 0.1 * s * ((i % 5) - 2) * 0.3;
     }
   }
 

@@ -9,7 +9,7 @@ export class SceneManager {
 
   constructor() {
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x070b16, 0.0018);
+    this.scene.fog = new THREE.FogExp2(0x060a14, 0.00145);
     this.scene.background = new THREE.Color(0x03050c);
 
     this.root = new THREE.Group();
@@ -23,21 +23,32 @@ export class SceneManager {
     this.scene.add(this.root);
     this.scene.add(this.finaleRoot);
 
-    const hemi = new THREE.HemisphereLight(0x1a2a44, 0x05070e, 0.55);
+    // Cold industrial night — layered, restrained
+    const hemi = new THREE.HemisphereLight(0x1a2840, 0x03050a, 0.45);
     this.scene.add(hemi);
 
-    const key = new THREE.DirectionalLight(0x8aa0c0, 0.35);
-    key.position.set(40, 120, 60);
+    const key = new THREE.DirectionalLight(0x7a90b0, 0.28);
+    key.position.set(60, 180, 90);
     this.scene.add(key);
 
-    const fill = new THREE.DirectionalLight(0x4de8ff, 0.12);
-    fill.position.set(-80, 40, -40);
+    const fill = new THREE.DirectionalLight(0x3a6a88, 0.1);
+    fill.position.set(-120, 50, -60);
     this.scene.add(fill);
 
-    const rim = new THREE.PointLight(0xff3d9a, 0.0, 400, 2);
-    rim.position.set(0, 80, 0);
+    // Subtle upward bounce from wet streets
+    const bounce = new THREE.DirectionalLight(0x152030, 0.12);
+    bounce.position.set(0, -40, 20);
+    this.scene.add(bounce);
+
+    const rim = new THREE.PointLight(0xff3d9a, 0.0, 520, 1.8);
+    rim.position.set(0, 50, -10);
     rim.name = 'fractureRim';
     this.scene.add(rim);
+
+    const cyanWash = new THREE.PointLight(0x4de8ff, 0.15, 400, 2);
+    cyanWash.position.set(40, 100, 160);
+    cyanWash.name = 'cyanWash';
+    this.scene.add(cyanWash);
   }
 
   setFog(density: number, color: THREE.ColorRepresentation): void {

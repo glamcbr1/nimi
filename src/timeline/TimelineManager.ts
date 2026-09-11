@@ -161,14 +161,15 @@ export class TimelineManager {
   } {
     const p = this.progress;
     const s = (a: number, b: number) => clamp((p - a) / (b - a), 0, 1);
-    const fracture = easeInOutCubic(s(0.30, 0.55));
-    const gravity = easeInOutCubic(s(0.42, 0.58));
-    const fold = easeInOutCubic(s(0.50, 0.68));
-    const ghost = easeInOutCubic(s(0.58, 0.78));
-    const dissolve = easeInOutCubic(s(0.82, 0.92));
-    const core = easeInOutCubic(s(0.72, 0.88));
-    const silence = easeInOutCubic(s(0.90, 0.95));
-    const finale = easeInOutCubic(s(0.94, 1.0));
+    // Progressive authored arc — large readable beats, not tiny jitters
+    const fracture = easeInOutCubic(s(0.28, 0.52));
+    const gravity = easeInOutCubic(s(0.40, 0.58));
+    const fold = easeInOutCubic(s(0.48, 0.68));
+    const ghost = easeInOutCubic(s(0.56, 0.76));
+    const dissolve = easeInOutCubic(s(0.80, 0.92));
+    const core = easeInOutCubic(s(0.70, 0.88));
+    const silence = easeInOutCubic(s(0.89, 0.95));
+    const finale = easeInOutCubic(s(0.93, 1.0));
     const distort = Math.max(fracture * 0.5, ghost * 0.8, dissolve);
     const grade = s(0.0, 0.4) * 0.2 + fracture * 0.6 + finale * 1.2;
     const rain = 1 - finale * 0.95;
