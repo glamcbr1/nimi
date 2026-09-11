@@ -50,10 +50,14 @@ export class TrafficSystem {
         }
         curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.25);
       } else {
-        const y = rng.pick([58, 78, 98, 125, 155, 180]);
-        const radius = rng.range(70, 280);
+        // Mix skyway traffic + distant aircraft ribbons (scale cues)
+        const high = i > count * 0.85;
+        const y = high
+          ? rng.pick([220, 260, 300, 340])
+          : rng.pick([58, 78, 98, 125, 155, 180]);
+        const radius = high ? rng.range(200, 420) : rng.range(70, 280);
         const cx = rng.range(-140, 140);
-        const cz = rng.range(-60, 220);
+        const cz = high ? rng.range(-40, 380) : rng.range(-60, 220);
         const pts: THREE.Vector3[] = [];
         const segs = 10;
         const elliptical = rng.chance(0.4);

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-/** Cinematic near-camera rain streaks (not sparse point sprinkle) */
+/** Cinematic near-camera rain streaks with wind — longer, denser near field. */
 export class WeatherSystem {
   readonly group = new THREE.Group();
   private streaks: THREE.InstancedMesh;
@@ -8,15 +8,15 @@ export class WeatherSystem {
   private count: number;
   private intensity = 1;
   private offsets: Float32Array;
+  private windPhase = 0;
 
   constructor(count: number) {
-    // Cap streak meshes for perf; visual density from length + near field
-    this.count = Math.min(count, 3500);
-    const geo = new THREE.BoxGeometry(0.06, 1, 0.06);
+    this.count = Math.min(count, 3200);
+    const geo = new THREE.BoxGeometry(0.045, 1, 0.045);
     const mat = new THREE.MeshBasicMaterial({
-      color: 0xb0c4d8,
+      color: 0xb8cce0,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.38,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
@@ -26,36 +26,46 @@ export class WeatherSystem {
 
     this.offsets = new Float32Array(this.count * 4);
     for (let i = 0; i < this.count; i++) {
-      this.offsets[i * 4] = (Math.random() - 0.5) * 120;
-      this.offsets[i * 4 + 1] = Math.random() * 80;
-      this.offsets[i * 4 + 2] = (Math.random() - 0.5) * 120;
-      this.offsets[i * 4 + 3] = 1.5 + Math.random() * 3.5; // streak length scale
+      // Bias more streaks near camera (tighter spawn volume)
+      const near = i < this.count * 0.55;
+      const spread = near ? 55 : 110;
+      this.offsets[i * 4] = (Math.random() - 0.5) * spread;
+      this.offsets[i * 4 + 1] = Math.random() * 70;
+      this.offsets[i * 4 + 2] = (Math.random() - 0.5) * spread;
+      this.offsets[i * 4 + 3] = near ? 2.2 + Math.random() * 4.5 : 1.2 + Math.random() * 2.8;
     }
   }
 
   setIntensity(v: number): void {
     this.intensity = v;
-    (this.streaks.material as THREE.MeshBasicMaterial).opacity = 0.22 + 0.28 * v;
+    (this.streaks.material as THREE.MeshBasicMaterial).opacity = 0.2 + 0.32 * v;
     this.streaks.visible = v > 0.02;
   }
 
   update(dt: number, cameraPos: THREE.Vector3): void {
     if (this.intensity < 0.02) return;
-    const wind = 12 * this.intensity;
-    const fall = 55 * this.intensity;
+    this.windPhase += dt;
+    const windGust = 1 + 0.35 * Math.sin(this.windPhase * 0.7);
+    const wind = 14 * this.intensity * windGust;
+    const fall = 62 * this.intensity;
+    const tilt = -0.28 - 0.12 * windGust * this.intensity;
+
     for (let i = 0; i < this.count; i++) {
       let x = this.offsets[i * 4];
       let y = this.offsets[i * 4 + 1];
       let z = this.offsets[i * 4 + 2];
       const len = this.offsets[i * 4 + 3];
 
-      y -= fall * dt;
+      y -= fall * dt * (0.85 + (i % 5) * 0.06);
       x -= wind * dt;
+      z += Math.sin(this.windPhase + i * 0.01) * 2 * dt;
 
-      if (y < -20) {
-        x = (Math.random() - 0.5) * 100;
-        y = 30 + Math.random() * 70;
-        z = (Math.random() - 0.5) * 100;
+      if (y < -25) {
+        const near = i < this.count * 0.55;
+        const spread = near ? 50 : 100;
+        x = (Math.random() - 0.5) * spread;
+        y = 25 + Math.random() * 65;
+        z = (Math.random() - 0.5) * spread;
       }
 
       this.offsets[i * 4] = x;
@@ -63,9 +73,8 @@ export class WeatherSystem {
       this.offsets[i * 4 + 2] = z;
 
       this.dummy.position.set(cameraPos.x + x, cameraPos.y + y, cameraPos.z + z);
-      // Tilt with wind
-      this.dummy.rotation.set(0, 0, -0.35);
-      this.dummy.scale.set(1, len * (0.8 + this.intensity * 0.5), 1);
+      this.dummy.rotation.set(0, 0, tilt);
+      this.dummy.scale.set(1, len * (0.9 + this.intensity * 0.55), 1);
       this.dummy.updateMatrix();
       this.streaks.setMatrixAt(i, this.dummy.matrix);
     }

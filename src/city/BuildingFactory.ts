@@ -49,11 +49,11 @@ export function rollBuilding(family: BuildingFamily, rng: RNG): BuildingSpec {
 
   switch (family) {
     case 'megatower':
-      width = rng.range(14, 28);
-      depth = rng.range(14, 28);
-      height = rng.range(160, 340);
-      emissive = rng.range(0.75, 1.15);
-      color.setHSL(0.58, 0.12, rng.range(0.05, 0.11));
+      width = rng.range(18, 36);
+      depth = rng.range(18, 36);
+      height = rng.range(200, 420);
+      emissive = rng.range(0.8, 1.25);
+      color.setHSL(0.58, 0.12, rng.range(0.045, 0.1));
       break;
     case 'midrise':
       width = rng.range(8, 18);
@@ -77,11 +77,11 @@ export function rollBuilding(family: BuildingFamily, rng: RNG): BuildingSpec {
       color.setHSL(0.55, 0.15, 0.08);
       break;
     case 'vertical':
-      width = rng.range(6, 12);
-      depth = rng.range(6, 12);
-      height = rng.range(80, 200);
-      emissive = rng.range(0.65, 1.05);
-      color.setHSL(0.62, 0.14, rng.range(0.05, 0.1));
+      width = rng.range(7, 14);
+      depth = rng.range(7, 14);
+      height = rng.range(100, 260);
+      emissive = rng.range(0.7, 1.1);
+      color.setHSL(0.62, 0.14, rng.range(0.045, 0.095));
       break;
     case 'anomaly':
       width = rng.range(10, 22);
@@ -275,7 +275,7 @@ export function buildTowerParts(
   return parts;
 }
 
-/** Long skyway beam + glowing underside strip between two anchors */
+/** Long skyway beam + thickness + cables + glowing underside strip */
 export function buildSkyway(
   x1: number,
   z1: number,
@@ -292,9 +292,10 @@ export function buildSkyway(
   const mx = (x1 + x2) * 0.5;
   const mz = (z1 + z2) * 0.5;
   const ry = Math.atan2(dx, dz);
-  const thick = rng.range(3.5, 7);
-  const beamH = rng.range(1.4, 2.8);
+  const thick = rng.range(5.5, 11);
+  const beamH = rng.range(2.2, 4.5);
 
+  // Main deck
   parts.push({
     kind: 'bridge',
     x: mx,
@@ -307,24 +308,45 @@ export function buildSkyway(
     rx: 0,
     rz: 0,
     color: new THREE.Color().setHSL(0.55, 0.08, 0.07),
-    emissive: 0.25,
+    emissive: 0.28,
     seed: rng.next(),
   });
 
-  // Glowing strip
+  // Side rails for thickness read
+  const nx = Math.cos(ry); // lateral in XZ after yaw around Y
+  const nz = -Math.sin(ry);
+  for (const side of [-1, 1]) {
+    parts.push({
+      kind: 'bridge',
+      x: mx + side * nx * (thick * 0.48),
+      y: y + beamH * 0.55,
+      z: mz + side * nz * (thick * 0.48),
+      sx: 0.55,
+      sy: rng.range(1.2, 2.2),
+      sz: len * 0.98,
+      ry,
+      rx: 0,
+      rz: 0,
+      color: new THREE.Color().setHSL(0.55, 0.1, 0.08),
+      emissive: 0.2,
+      seed: rng.next(),
+    });
+  }
+
+  // Glowing underside strip
   parts.push({
     kind: 'strip',
     x: mx,
-    y: y - beamH * 0.55,
+    y: y - beamH * 0.58,
     z: mz,
-    sx: thick * 0.35,
-    sy: 0.35,
+    sx: thick * 0.4,
+    sy: 0.4,
     sz: len * 0.98,
     ry,
     rx: 0,
     rz: 0,
     color: new THREE.Color(0x4de8ff),
-    emissive: 1.6,
+    emissive: 1.85,
     seed: rng.next(),
   });
 
@@ -339,14 +361,38 @@ export function buildSkyway(
       x: px,
       y: pylonH * 0.5,
       z: pz,
-      sx: rng.range(2, 4),
+      sx: rng.range(2.8, 5),
       sy: pylonH,
-      sz: rng.range(2, 4),
+      sz: rng.range(2.8, 5),
       ry,
       rx: 0,
       rz: 0,
       color: new THREE.Color().setHSL(0.55, 0.1, 0.06),
-      emissive: 0.2,
+      emissive: 0.22,
+      seed: rng.next(),
+    });
+  }
+
+  // Suspension cables (thin details drooping from mid)
+  const cableN = Math.min(6, Math.floor(len / 40));
+  for (let c = 1; c <= cableN; c++) {
+    const t = c / (cableN + 1);
+    const cx = x1 + dx * t;
+    const cz = z1 + dz * t;
+    const sag = Math.sin(t * Math.PI) * rng.range(4, 10);
+    parts.push({
+      kind: 'detail',
+      x: cx,
+      y: y - sag * 0.5,
+      z: cz,
+      sx: 0.25,
+      sy: sag,
+      sz: 0.25,
+      ry,
+      rx: 0,
+      rz: 0,
+      color: new THREE.Color().setHSL(0.55, 0.05, 0.12),
+      emissive: 0.15,
       seed: rng.next(),
     });
   }

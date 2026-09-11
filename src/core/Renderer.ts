@@ -18,7 +18,7 @@ export class Renderer {
     this.renderer.setClearColor(0x03050c, 1);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.12;
     this.renderer.setPixelRatio(1);
     this.resize();
   }
@@ -27,7 +27,7 @@ export class Renderer {
     const dpr = Math.min(window.devicePixelRatio || 1, q.pixelRatioCap) * (q.dpr / Math.max(q.pixelRatioCap, 0.1));
     const capped = Math.min(window.devicePixelRatio || 1, q.pixelRatioCap);
     this.renderer.setPixelRatio(capped);
-    this.renderer.toneMappingExposure = q.bloom ? 1.05 : 1.15;
+    this.renderer.toneMappingExposure = q.bloom ? 1.12 : 1.2;
   }
 
   resize(): void {

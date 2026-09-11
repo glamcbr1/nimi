@@ -171,7 +171,7 @@ export class App {
 
     // Atmosphere evolution — cold night → fracture magenta → void → finale
     const fogDensity =
-      0.00125 + knobs.fracture * 0.0007 + knobs.ghost * 0.0004 - knobs.finale * 0.0011;
+      0.0011 + knobs.fracture * 0.00065 + knobs.ghost * 0.0004 - knobs.finale * 0.001;
     let fogColor = 0x060a14;
     if (knobs.finale > 0.35) fogColor = 0x010208;
     else if (knobs.silence > 0.3) fogColor = 0x04060c;
@@ -179,9 +179,7 @@ export class App {
     else if (knobs.fracture > 0.3) fogColor = 0x0a0814;
     this.scenes.setFog(Math.max(0.00015, fogDensity), fogColor);
 
-    const rim = this.scenes.getFractureLight();
-    rim.intensity = knobs.fracture * 2.8 + knobs.core * 5.5;
-    rim.position.copy(this.fracture.corePos);
+    this.scenes.update(time, knobs, this.fracture.corePos);
 
     this.cityFade = 1 - knobs.finale * 0.95 - knobs.dissolve * 0.45;
     this.city.setVisible(this.cityFade > 0.05);

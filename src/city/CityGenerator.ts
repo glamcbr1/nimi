@@ -68,9 +68,9 @@ export class CityGenerator {
     });
 
     const volCap = Math.ceil(target * 5.5);
-    const detCap = Math.ceil(target * 1.8);
-    const bridgeCap = 160;
-    const stripCap = 160;
+    const detCap = Math.ceil(target * 2.2);
+    const bridgeCap = 280;
+    const stripCap = 200;
 
     this.layers = {
       volume: this.makeLayer('volume', volCap),
@@ -170,11 +170,11 @@ export class CityGenerator {
     // Central avenue wet plate (slightly raised reflective strip)
     const avenueMat = new THREE.MeshStandardMaterial({
       map: asphalt,
-      color: 0xc8d0dc,
-      roughness: 0.35,
-      metalness: 0.45,
-      emissive: 0x102030,
-      emissiveIntensity: 0.28,
+      color: 0xd0d8e4,
+      roughness: 0.28,
+      metalness: 0.55,
+      emissive: 0x142838,
+      emissiveIntensity: 0.34,
     });
     // Stretch UV along avenue
     const avenueGeo = new THREE.PlaneGeometry(STREET_WIDTH, 900, 1, 1);
@@ -204,6 +204,35 @@ export class CityGenerator {
       const curb = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.7, 880), curbMat);
       curb.position.set(side * (STREET_WIDTH * 0.5 + 1.1), 0.25, 60);
       this.group.add(curb);
+    }
+
+    // Tiny traffic lights as scale cues along avenue banks
+    const signalMat = new THREE.MeshBasicMaterial({ color: 0xff3030 });
+    const signalMatA = new THREE.MeshBasicMaterial({ color: 0xffb020 });
+    const signalMatB = new THREE.MeshBasicMaterial({ color: 0x30ff60 });
+    const signalZs = [300, 200, 100, 20, -40];
+    for (const z of signalZs) {
+      for (const side of [-1, 1] as const) {
+        const baseX = side * (STREET_WIDTH * 0.5 + 3.5);
+        const pole = new THREE.Mesh(
+          new THREE.BoxGeometry(0.25, 5.5, 0.25),
+          new THREE.MeshBasicMaterial({ color: 0x1a222c })
+        );
+        pole.position.set(baseX, 2.75, z);
+        this.group.add(pole);
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.8, 0.5), curbMat);
+        head.position.set(baseX, 5.8, z);
+        this.group.add(head);
+        for (const [dy, mat] of [
+          [0.5, signalMat],
+          [0.0, signalMatA],
+          [-0.5, signalMatB],
+        ] as const) {
+          const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.2), mat);
+          lamp.position.set(baseX - side * 0.35, 5.8 + dy, z);
+          this.group.add(lamp);
+        }
+      }
     }
 
     // Occasional plaza pads OUTSIDE clearance
@@ -256,8 +285,8 @@ export class CityGenerator {
           let family: 'megatower' | 'vertical' | 'midrise' | 'industrial';
           let hScale = 1;
           if (row === 1) {
-            family = rng.chance(0.55) ? 'megatower' : 'vertical';
-            hScale = rng.range(1.15, 1.65);
+            family = rng.chance(0.62) ? 'megatower' : 'vertical';
+            hScale = rng.range(1.25, 1.85);
           } else if (row === 2) {
             family = rng.chance(0.4) ? 'vertical' : 'midrise';
             hScale = rng.range(0.95, 1.25);
@@ -375,25 +404,23 @@ export class CityGenerator {
     }
   }
 
-  /** Explicit megatowers framing the avenue entrance & canyon. */
+  /** Explicit megatowers framing the avenue entrance & canyon — fewer, BIGGER. */
   private placeHeroMegatowers(rng: RNG): void {
-    // [side, pathT, lateral, heightScale]
+    // [side, pathT, lateral, heightScale] — 200–400+ after roll*scale
     const anchors: Array<[-1 | 1, number, number, number]> = [
-      // Entrance gate (high Z)
-      [-1, 0.12, 48, 1.85],
-      [1, 0.12, 52, 1.95],
-      [-1, 0.18, 46, 1.7],
-      [1, 0.18, 50, 1.75],
-      // Mid canyon framing
-      [-1, 0.28, 44, 1.55],
-      [1, 0.28, 48, 1.6],
-      [-1, 0.35, 46, 1.5],
-      [1, 0.35, 44, 1.55],
-      // Near core
-      [-1, 0.48, 48, 1.4],
-      [1, 0.48, 50, 1.45],
-      [-1, 0.55, 52, 1.35],
-      [1, 0.55, 48, 1.3],
+      // Entrance gate postcard silhouettes
+      [-1, 0.1, 52, 2.15],
+      [1, 0.1, 56, 2.35],
+      [-1, 0.16, 50, 1.95],
+      [1, 0.16, 54, 2.05],
+      // Mid canyon looming pair
+      [-1, 0.26, 48, 1.85],
+      [1, 0.26, 50, 1.9],
+      [-1, 0.34, 48, 1.7],
+      [1, 0.34, 46, 1.75],
+      // Near core sentinels
+      [-1, 0.46, 50, 1.55],
+      [1, 0.46, 52, 1.6],
     ];
 
     const pos = new THREE.Vector3();
@@ -489,10 +516,10 @@ export class CityGenerator {
 
     for (let i = 0; i < count; i++) {
       const ang = (i / count) * Math.PI * 2 + rng.range(-0.05, 0.05);
-      const r = rng.range(520, 780);
-      const h = rng.range(160, 440);
-      const w = rng.range(30, 95);
-      const d = rng.range(30, 95);
+      const r = rng.range(540, 820);
+      const h = rng.range(220, 560);
+      const w = rng.range(40, 120);
+      const d = rng.range(40, 120);
       this.dummy.position.set(Math.cos(ang) * r, h * 0.5, Math.sin(ang) * r);
       this.dummy.scale.set(w, h, d);
       this.dummy.rotation.set(0, ang + Math.PI / 2, 0);
@@ -543,7 +570,7 @@ export class CityGenerator {
     u.uGhost.value = knobs.ghost;
     u.uCameraPos.value.copy(cameraPos);
     u.uCorePos.value.copy(this.corePos);
-    u.uFogDensity.value = 0.00115 + knobs.fracture * 0.0005 + knobs.ghost * 0.0003;
+    u.uFogDensity.value = 0.00105 + knobs.fracture * 0.00055 + knobs.ghost * 0.00035;
   }
 
   setVisible(v: boolean): void {

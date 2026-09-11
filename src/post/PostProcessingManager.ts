@@ -20,7 +20,7 @@ export class PostProcessingManager {
   private noise: NoiseEffect;
   private grade: HueSaturationEffect;
   private contrast: BrightnessContrastEffect;
-  private baseBloom = 0.28;
+  private baseBloom = 0.32;
   private enabled: boolean;
 
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
@@ -29,18 +29,18 @@ export class PostProcessingManager {
     });
     this.composer.addPass(new RenderPass(scene, camera));
 
-    // Restrained bloom — not glow soup
+    // Restrained bloom — bright windows / skyways / core only
     this.bloom = new BloomEffect({
-      intensity: 0.28,
-      luminanceThreshold: 0.62,
-      luminanceSmoothing: 0.35,
+      intensity: 0.32,
+      luminanceThreshold: 0.58,
+      luminanceSmoothing: 0.32,
       mipmapBlur: true,
     });
-    this.vignette = new VignetteEffect({ darkness: 0.58, offset: 0.32 });
+    this.vignette = new VignetteEffect({ darkness: 0.55, offset: 0.34 });
     this.noise = new NoiseEffect({ premultiply: true });
-    this.noise.blendMode.opacity.value = 0.14;
-    this.grade = new HueSaturationEffect({ saturation: -0.1, hue: 0 });
-    this.contrast = new BrightnessContrastEffect({ brightness: -0.03, contrast: 0.1 });
+    this.noise.blendMode.opacity.value = 0.12;
+    this.grade = new HueSaturationEffect({ saturation: -0.12, hue: 0 });
+    this.contrast = new BrightnessContrastEffect({ brightness: -0.025, contrast: 0.12 });
     const tone = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC });
 
     this.composer.addPass(
@@ -51,9 +51,9 @@ export class PostProcessingManager {
 
   applyQuality(q: QualitySettings): void {
     this.enabled = true;
-    this.baseBloom = q.bloom ? 0.28 : 0.0;
+    this.baseBloom = q.bloom ? 0.32 : 0.0;
     this.bloom.intensity = this.baseBloom;
-    this.noise.blendMode.opacity.value = q.bloom ? 0.14 : 0.08;
+    this.noise.blendMode.opacity.value = q.bloom ? 0.12 : 0.07;
   }
 
   setSize(w: number, h: number): void {
@@ -68,29 +68,41 @@ export class PostProcessingManager {
     finale: number;
     fracture: number;
   }): void {
-    // Bloom: restrained, peaks at core emissives only
-    this.bloom.intensity = this.baseBloom * (0.85 + knobs.core * 0.9 + knobs.fracture * 0.25);
-
-    this.vignette.darkness = 0.52 + knobs.silence * 0.3 + knobs.finale * 0.12;
-    this.noise.blendMode.opacity.value = 0.1 + knobs.distort * 0.18 + knobs.silence * 0.08;
-
-    // Color grade arc: cold → cyan/magenta fracture → near-monochrome silence → surreal finale
-    if (knobs.finale > 0.2) {
-      this.grade.saturation = -0.05 + knobs.finale * 0.15;
-      this.contrast.contrast = 0.12;
-      this.contrast.brightness = -0.04;
-    } else if (knobs.silence > 0.2) {
-      this.grade.saturation = -0.35 - knobs.silence * 0.25;
-      this.contrast.contrast = 0.05;
-      this.contrast.brightness = -0.1;
-    } else if (knobs.fracture > 0.15 || knobs.core > 0.1) {
-      this.grade.saturation = -0.02 + knobs.fracture * 0.08;
-      this.contrast.contrast = 0.1 + knobs.distort * 0.06;
-      this.contrast.brightness = -0.02;
+    this.bloom.intensity = this.baseBloom * (0.8 + knobs.core * 1.05 + knobs.fracture * 0.28);
+    // Raise threshold early so only windows/skyways bloom — not mush
+    if (knobs.core > 0.3) {
+      this.bloom.luminanceMaterial.threshold = 0.48;
+    } else if (knobs.fracture > 0.2) {
+      this.bloom.luminanceMaterial.threshold = 0.52;
     } else {
-      this.grade.saturation = -0.12;
-      this.contrast.contrast = 0.08;
+      this.bloom.luminanceMaterial.threshold = 0.6;
+    }
+
+    this.vignette.darkness = 0.5 + knobs.silence * 0.32 + knobs.finale * 0.1;
+    this.noise.blendMode.opacity.value = 0.09 + knobs.distort * 0.16 + knobs.silence * 0.07;
+
+    // Color grade arc: cold teal shadows / warm practicals → cyan-magenta fracture → desat silence → surreal finale
+    if (knobs.finale > 0.2) {
+      this.grade.saturation = -0.02 + knobs.finale * 0.12;
+      this.grade.hue = 0.02;
+      this.contrast.contrast = 0.14;
       this.contrast.brightness = -0.03;
+    } else if (knobs.silence > 0.2) {
+      this.grade.saturation = -0.4 - knobs.silence * 0.28;
+      this.grade.hue = 0;
+      this.contrast.contrast = 0.04;
+      this.contrast.brightness = -0.12;
+    } else if (knobs.fracture > 0.15 || knobs.core > 0.1) {
+      this.grade.saturation = 0.02 + knobs.fracture * 0.1;
+      this.grade.hue = knobs.fracture * 0.04 - knobs.core * 0.02;
+      this.contrast.contrast = 0.12 + knobs.distort * 0.06;
+      this.contrast.brightness = -0.015;
+    } else {
+      // Early: cold teal shadows, slightly desaturated — film still
+      this.grade.saturation = -0.14;
+      this.grade.hue = -0.015; // pull toward teal
+      this.contrast.contrast = 0.11;
+      this.contrast.brightness = -0.028;
     }
   }
 

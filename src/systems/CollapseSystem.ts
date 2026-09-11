@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /**
- * Finale: spherical city rings floating in void — surreal, not a toy planet.
+ * Finale: spherical city rings floating in void — huge, readable, intentional.
  */
 export class CollapseSystem {
   readonly group = new THREE.Group();
@@ -10,17 +10,19 @@ export class CollapseSystem {
   private rings: THREE.Mesh[] = [];
   private stars: THREE.Points;
   private buildings: THREE.InstancedMesh;
-  private debris: THREE.Points;
+  private debris: THREE.InstancedMesh;
+  private debrisPts: THREE.Points;
+  private accretion: THREE.Mesh;
   private strength = 0;
+  private dummy = new THREE.Object3D();
 
   constructor() {
     this.sphereCity = new THREE.Group();
 
-    // Deep starfield
-    const starCount = 2800;
+    const starCount = 3200;
     const starPos = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount; i++) {
-      const r = 500 + Math.random() * 1200;
+      const r = 600 + Math.random() * 1400;
       const a = Math.random() * Math.PI * 2;
       const b = Math.acos(2 * Math.random() - 1);
       starPos[i * 3] = r * Math.sin(b) * Math.cos(a);
@@ -32,70 +34,97 @@ export class CollapseSystem {
     this.stars = new THREE.Points(
       starGeo,
       new THREE.PointsMaterial({
-        color: 0xb8c8e8,
-        size: 1.1,
+        color: 0xc0d0f0,
+        size: 1.2,
         transparent: true,
-        opacity: 0.8,
+        opacity: 0.85,
         depthWrite: false,
       })
     );
     this.group.add(this.stars);
 
-    // Dark core shell
+    // Dark core shell — larger presence
     this.planet = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(42, 3),
+      new THREE.IcosahedronGeometry(52, 3),
       new THREE.MeshStandardMaterial({
-        color: 0x060a12,
-        emissive: 0x101828,
-        emissiveIntensity: 0.35,
-        roughness: 0.9,
-        metalness: 0.25,
+        color: 0x050910,
+        emissive: 0x141e30,
+        emissiveIntensity: 0.4,
+        roughness: 0.92,
+        metalness: 0.28,
         flatShading: true,
       })
     );
     this.sphereCity.add(this.planet);
 
-    // Buildings protruding from sphere
-    const count = 520;
+    // Inner glow
+    const innerGlow = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(48, 2),
+      new THREE.MeshBasicMaterial({
+        color: 0xff3d9a,
+        transparent: true,
+        opacity: 0.08,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      })
+    );
+    this.sphereCity.add(innerGlow);
+
+    // Buildings as block districts on sphere
+    const count = 640;
     const geo = new THREE.BoxGeometry(1, 1, 1);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x101820,
+      color: 0x0e161f,
       emissive: 0x4de8ff,
-      emissiveIntensity: 0.35,
+      emissiveIntensity: 0.4,
       roughness: 0.7,
       metalness: 0.4,
     });
     this.buildings = new THREE.InstancedMesh(geo, mat, count);
-    const dummy = new THREE.Object3D();
     const color = new THREE.Color();
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const b = Math.acos(2 * Math.random() - 1);
-      const r = 42;
+      const r = 52;
       const dir = new THREE.Vector3(Math.sin(b) * Math.cos(a), Math.sin(b) * Math.sin(a), Math.cos(b));
-      const h = 2 + Math.random() * 16;
-      dummy.position.copy(dir).multiplyScalar(r + h * 0.5);
-      dummy.scale.set(0.8 + Math.random() * 2.2, h, 0.8 + Math.random() * 2.2);
-      dummy.lookAt(0, 0, 0);
-      dummy.rotateX(Math.PI / 2);
-      dummy.updateMatrix();
-      this.buildings.setMatrixAt(i, dummy.matrix);
-      color.setHSL(0.52 + Math.random() * 0.12, 0.55, 0.35 + Math.random() * 0.25);
+      const h = 3 + Math.random() * 22;
+      this.dummy.position.copy(dir).multiplyScalar(r + h * 0.5);
+      this.dummy.scale.set(1.0 + Math.random() * 3.2, h, 1.0 + Math.random() * 3.2);
+      this.dummy.lookAt(0, 0, 0);
+      this.dummy.rotateX(Math.PI / 2);
+      this.dummy.updateMatrix();
+      this.buildings.setMatrixAt(i, this.dummy.matrix);
+      color.setHSL(0.52 + Math.random() * 0.12, 0.55, 0.32 + Math.random() * 0.28);
       this.buildings.setColorAt(i, color);
     }
     if (this.buildings.instanceColor) this.buildings.instanceColor.needsUpdate = true;
     this.sphereCity.add(this.buildings);
 
-    // Multiple rings — eclipsed / spherical city rings
+    // Accretion disc — dimensional wound readable
+    this.accretion = new THREE.Mesh(
+      new THREE.RingGeometry(58, 95, 96),
+      new THREE.MeshBasicMaterial({
+        color: 0xff3d9a,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      })
+    );
+    this.accretion.rotation.x = Math.PI / 2.15;
+    this.sphereCity.add(this.accretion);
+
     const ringDefs = [
-      { r: 58, tube: 0.45, col: 0xff3d9a, tilt: Math.PI / 2.5, op: 0.65 },
-      { r: 72, tube: 0.3, col: 0x4de8ff, tilt: Math.PI / 2.1, op: 0.45 },
-      { r: 88, tube: 0.55, col: 0xa0b0c8, tilt: Math.PI / 2.8, op: 0.3 },
-      { r: 105, tube: 0.2, col: 0xff3d9a, tilt: Math.PI / 1.9, op: 0.35 },
+      { r: 70, tube: 0.7, col: 0xff3d9a, tilt: Math.PI / 2.4, op: 0.7 },
+      { r: 88, tube: 0.4, col: 0x4de8ff, tilt: Math.PI / 2.05, op: 0.5 },
+      { r: 108, tube: 0.65, col: 0xa8b8d0, tilt: Math.PI / 2.7, op: 0.32 },
+      { r: 128, tube: 0.28, col: 0xff3d9a, tilt: Math.PI / 1.95, op: 0.4 },
+      { r: 150, tube: 0.5, col: 0x4de8ff, tilt: Math.PI / 2.55, op: 0.22 },
     ];
     for (const rd of ringDefs) {
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(rd.r, rd.tube, 8, 160),
+        new THREE.TorusGeometry(rd.r, rd.tube, 10, 180),
         new THREE.MeshBasicMaterial({
           color: rd.col,
           transparent: true,
@@ -110,30 +139,59 @@ export class CollapseSystem {
       this.sphereCity.add(ring);
     }
 
-    // Drift debris field around finale
-    const debCount = 400;
-    const debPos = new Float32Array(debCount * 3);
+    // Chunk debris fields (readable blocks, not dust)
+    const debCount = 180;
+    this.debris = new THREE.InstancedMesh(
+      geo,
+      new THREE.MeshStandardMaterial({
+        color: 0x121820,
+        emissive: 0x2a4060,
+        emissiveIntensity: 0.25,
+        roughness: 0.85,
+        metalness: 0.3,
+      }),
+      debCount
+    );
     for (let i = 0; i < debCount; i++) {
-      const r = 50 + Math.random() * 160;
+      const r = 70 + Math.random() * 180;
       const a = Math.random() * Math.PI * 2;
       const b = Math.acos(2 * Math.random() - 1);
-      debPos[i * 3] = r * Math.sin(b) * Math.cos(a);
-      debPos[i * 3 + 1] = r * Math.sin(b) * Math.sin(a);
-      debPos[i * 3 + 2] = r * Math.cos(b);
+      this.dummy.position.set(
+        r * Math.sin(b) * Math.cos(a),
+        r * Math.sin(b) * Math.sin(a),
+        r * Math.cos(b)
+      );
+      const s = 1.5 + Math.random() * 8;
+      this.dummy.scale.set(s * (0.4 + Math.random()), s, s * (0.4 + Math.random()));
+      this.dummy.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
+      this.dummy.updateMatrix();
+      this.debris.setMatrixAt(i, this.dummy.matrix);
     }
-    const debGeo = new THREE.BufferGeometry();
-    debGeo.setAttribute('position', new THREE.BufferAttribute(debPos, 3));
-    this.debris = new THREE.Points(
-      debGeo,
+    this.sphereCity.add(this.debris);
+
+    const dustN = 500;
+    const dustPos = new Float32Array(dustN * 3);
+    for (let i = 0; i < dustN; i++) {
+      const r = 55 + Math.random() * 200;
+      const a = Math.random() * Math.PI * 2;
+      const b = Math.acos(2 * Math.random() - 1);
+      dustPos[i * 3] = r * Math.sin(b) * Math.cos(a);
+      dustPos[i * 3 + 1] = r * Math.sin(b) * Math.sin(a);
+      dustPos[i * 3 + 2] = r * Math.cos(b);
+    }
+    const dustGeo = new THREE.BufferGeometry();
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+    this.debrisPts = new THREE.Points(
+      dustGeo,
       new THREE.PointsMaterial({
         color: 0x88aacc,
-        size: 1.4,
+        size: 1.5,
         transparent: true,
-        opacity: 0.55,
+        opacity: 0.5,
         depthWrite: false,
       })
     );
-    this.sphereCity.add(this.debris);
+    this.sphereCity.add(this.debrisPts);
 
     this.sphereCity.position.set(0, 0, -90);
     this.group.add(this.sphereCity);
@@ -143,18 +201,22 @@ export class CollapseSystem {
   setStrength(s: number): void {
     this.strength = s;
     this.group.visible = s > 0.02;
-    this.sphereCity.scale.setScalar(0.25 + s * 1.05);
+    // Huge readable scale-up
+    this.sphereCity.scale.setScalar(0.2 + s * 1.35);
+    (this.accretion.material as THREE.MeshBasicMaterial).opacity = 0.15 + s * 0.35;
   }
 
   update(time: number): void {
     if (this.strength < 0.02) return;
-    this.sphereCity.rotation.y = time * 0.07;
-    this.sphereCity.rotation.x = Math.sin(time * 0.1) * 0.08;
+    this.sphereCity.rotation.y = time * 0.055;
+    this.sphereCity.rotation.x = Math.sin(time * 0.08) * 0.06;
+    this.accretion.rotation.z = time * 0.12;
     for (let i = 0; i < this.rings.length; i++) {
-      this.rings[i].rotation.z = time * (0.08 + i * 0.03) * (i % 2 === 0 ? 1 : -1);
+      this.rings[i].rotation.z = time * (0.06 + i * 0.025) * (i % 2 === 0 ? 1 : -1);
     }
-    this.stars.rotation.y = time * 0.008;
-    this.debris.rotation.y = -time * 0.04;
+    this.stars.rotation.y = time * 0.006;
+    this.debris.rotation.y = -time * 0.03;
+    this.debrisPts.rotation.y = -time * 0.035;
   }
 
   dispose(): void {
@@ -162,13 +224,17 @@ export class CollapseSystem {
     (this.planet.material as THREE.Material).dispose();
     this.buildings.geometry.dispose();
     (this.buildings.material as THREE.Material).dispose();
+    this.debris.geometry.dispose();
+    (this.debris.material as THREE.Material).dispose();
     for (const r of this.rings) {
       r.geometry.dispose();
       (r.material as THREE.Material).dispose();
     }
     this.stars.geometry.dispose();
     (this.stars.material as THREE.Material).dispose();
-    this.debris.geometry.dispose();
-    (this.debris.material as THREE.Material).dispose();
+    this.debrisPts.geometry.dispose();
+    (this.debrisPts.material as THREE.Material).dispose();
+    this.accretion.geometry.dispose();
+    (this.accretion.material as THREE.Material).dispose();
   }
 }

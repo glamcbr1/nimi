@@ -133,8 +133,12 @@ export class AudioManager {
       this.droneGains[i].gain.setTargetAtTime(g, t, 0.3);
     }
     if (this.master) {
-      const vol = knobs.silence > 0.8 ? 0.05 : 0.35;
-      this.master.gain.setTargetAtTime(this.enabled ? vol : 0, t, 0.4);
+      // Silence beat: almost freeze + hard duck
+      let vol = 0.35;
+      if (knobs.silence > 0.15) vol = 0.35 * (1 - knobs.silence * 0.92);
+      if (knobs.silence > 0.85) vol = 0.025;
+      if (knobs.finale > 0.5) vol = Math.max(vol, 0.12);
+      this.master.gain.setTargetAtTime(this.enabled ? vol : 0, t, knobs.silence > 0.5 ? 0.15 : 0.4);
     }
   }
 }
