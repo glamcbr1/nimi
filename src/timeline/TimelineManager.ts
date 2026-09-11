@@ -9,6 +9,7 @@ export class TimelineManager {
   private proxy: HTMLElement;
   private phase: PhaseDef;
   private listeners: Array<(p: number, phase: PhaseDef) => void> = [];
+  private syncingScroll = false;
 
   constructor(proxy: HTMLElement) {
     this.proxy = proxy;
@@ -20,51 +21,114 @@ export class TimelineManager {
     this.listeners.push(cb);
   }
 
+  private maxScroll(): number {
+    return Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  }
+
   private bind(): void {
-    // Use window scroll with tall proxy for native feel
     document.documentElement.style.height = '1200vh';
+    this.proxy.style.height = '1200vh';
+
     window.addEventListener(
       'scroll',
       () => {
-        const max = document.documentElement.scrollHeight - window.innerHeight;
-        this.target = max > 0 ? window.scrollY / max : 0;
+        if (this.syncingScroll) return;
+        this.target = clamp(window.scrollY / this.maxScroll(), 0, 1);
         this.scrolling = true;
       },
       { passive: true }
     );
 
-    // Touch / wheel fallback smoothing via gsap
+    // Primary path on Mac trackpads / when overflow quirks block native scroll
     window.addEventListener(
       'wheel',
       (e) => {
-        // allow native scroll; just mark activity
+        // If page can scroll natively, let it — scroll listener updates target.
+        // If not (maxScroll tiny / locked), drive target from wheel directly.
+        const max = this.maxScroll();
+        const canNative = max > window.innerHeight * 0.5;
+        if (canNative && !e.ctrlKey) {
+          this.scrolling = true;
+          return;
+        }
+        e.preventDefault();
+        const delta = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1);
+        this.target = clamp(this.target + delta * 0.00055, 0, 1);
         this.scrolling = true;
-        void e;
+        this.syncingScroll = true;
+        window.scrollTo(0, this.target * max);
+        this.syncingScroll = false;
+      },
+      { passive: false }
+    );
+
+    // Touch drag for trackpad-less / mobile
+    let touchY = 0;
+    window.addEventListener(
+      'touchstart',
+      (e) => {
+        if (e.touches.length === 1) touchY = e.touches[0].clientY;
       },
       { passive: true }
     );
+    window.addEventListener(
+      'touchmove',
+      (e) => {
+        if (e.touches.length !== 1) return;
+        const y = e.touches[0].clientY;
+        const dy = touchY - y;
+        touchY = y;
+        this.target = clamp(this.target + dy * 0.0012, 0, 1);
+        this.scrolling = true;
+        this.syncingScroll = true;
+        window.scrollTo(0, this.target * this.maxScroll());
+        this.syncingScroll = false;
+      },
+      { passive: true }
+    );
+
+    // Keyboard fallback
+    window.addEventListener('keydown', (e) => {
+      const step = e.shiftKey ? 0.08 : 0.035;
+      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        this.setProgress(this.target + step, false);
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault();
+        this.setProgress(this.target - step, false);
+      } else if (e.key === 'Home') {
+        this.setProgress(0, true);
+      } else if (e.key === 'End') {
+        this.setProgress(1, true);
+      }
+    });
   }
 
   setProgress(p: number, immediate = false): void {
     this.target = clamp(p, 0, 1);
     if (immediate) {
       this.progress = this.target;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      window.scrollTo(0, this.progress * max);
+      this.syncingScroll = true;
+      window.scrollTo(0, this.progress * this.maxScroll());
+      this.syncingScroll = false;
       this.emit();
     } else {
       gsap.to(this, {
         progress: this.target,
-        duration: 0.6,
+        duration: 0.55,
         ease: 'power2.out',
-        onUpdate: () => this.emit(),
+        onUpdate: () => {
+          this.syncingScroll = true;
+          window.scrollTo(0, this.progress * this.maxScroll());
+          this.syncingScroll = false;
+          this.emit();
+        },
       });
     }
   }
 
   update(_dt: number): void {
-    // Smooth toward scroll target
-    const next = this.progress + (this.target - this.progress) * 0.08;
+    const next = this.progress + (this.target - this.progress) * 0.1;
     if (Math.abs(next - this.progress) > 0.00001) {
       this.progress = next;
       this.emit();

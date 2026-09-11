@@ -11,17 +11,29 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body {
+html {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  /* Tall document so native scroll drives the timeline */
+  height: 1200vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  width: 100%;
+  min-height: 100%;
+  height: auto;
+  overflow: visible;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
 }
 
-#app { position: relative; width: 100%; height: 100%; }
+#app { position: relative; width: 100%; min-height: 100%; }
 
 #webgl {
   position: fixed;
