@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#03050c" />
+    <title>FRACTURE CITY — Reality Is A Structure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="webgl"></canvas>
+
+      <div id="loader" class="loader">
+        <div class="loader__boot">
+          <div class="loader__mark">FC</div>
+          <div class="loader__lines">
+            <div class="loader__line" data-line="0">INITIALIZING STRUCTURAL MATRIX</div>
+            <div class="loader__line" data-line="1">MAPPING DISTRICT GEOMETRY</div>
+            <div class="loader__line" data-line="2">CALIBRATING FRACTURE FIELD</div>
+            <div class="loader__line" data-line="3">SYNCING REALITY LAYERS</div>
+            <div class="loader__line" data-line="4">AWAITING DESCENT</div>
+          </div>
+          <div class="loader__bar"><div class="loader__fill" id="loader-fill"></div></div>
+          <div class="loader__pct" id="loader-pct">00%</div>
+        </div>
+      </div>
+
+      <div id="hud" class="hud hud--hidden">
+        <div class="hud__top">
+          <div class="hud__brand">
+            <span class="hud__title">FRACTURE CITY</span>
+            <span class="hud__tag">REALITY IS A STRUCTURE</span>
+          </div>
+          <div class="hud__controls">
+            <button id="btn-audio" class="hud__btn" type="button" aria-label="Toggle audio">AUDIO OFF</button>
+            <button id="btn-quality" class="hud__btn" type="button" aria-label="Quality">HIGH</button>
+          </div>
+        </div>
+        <div class="hud__section">
+          <span class="hud__section-num" id="section-num">01</span>
+          <span class="hud__section-label" id="section-label">INTRO</span>
+        </div>
+        <div class="hud__scroll" id="scroll-hint">
+          <span>SCROLL TO DESCEND</span>
+          <div class="hud__scroll-line"></div>
+        </div>
+      </div>
+
+      <div id="finale-card" class="finale-card finale-card--hidden">
+        <h1>FRACTURE CITY</h1>
+        <p>REALITY IS A STRUCTURE.</p>
+      </div>
+
+      <div id="scroll-proxy" class="scroll-proxy" aria-hidden="true"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
