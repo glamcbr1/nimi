@@ -188,7 +188,15 @@ export class App {
     this.scenes.cityRoot.visible = this.cityFade > 0.05;
     this.scenes.finaleRoot.visible = knobs.finale > 0.05 || knobs.silence > 0.5;
 
-    this.city.update(time, this.camera.camera.position, knobs);
+    // Hard gate: no vertex chaos until the flythrough earns trust
+    const cityKnobs = {
+      fracture: progress < 0.35 ? 0 : knobs.fracture,
+      gravity: progress < 0.35 ? 0 : knobs.gravity,
+      fold: progress < 0.35 ? 0 : knobs.fold,
+      dissolve: knobs.dissolve,
+      ghost: progress < 0.35 ? 0 : knobs.ghost,
+    };
+    this.city.update(time, this.camera.camera.position, cityKnobs);
 
     this.traffic.setGlitch(knobs.trafficGlitch);
     this.traffic.update(dt);

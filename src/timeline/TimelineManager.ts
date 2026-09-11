@@ -39,12 +39,9 @@ export class TimelineManager {
       { passive: true }
     );
 
-    // Primary path on Mac trackpads / when overflow quirks block native scroll
     window.addEventListener(
       'wheel',
       (e) => {
-        // If page can scroll natively, let it — scroll listener updates target.
-        // If not (maxScroll tiny / locked), drive target from wheel directly.
         const max = this.maxScroll();
         const canNative = max > window.innerHeight * 0.5;
         if (canNative && !e.ctrlKey) {
@@ -62,7 +59,6 @@ export class TimelineManager {
       { passive: false }
     );
 
-    // Touch drag for trackpad-less / mobile
     let touchY = 0;
     window.addEventListener(
       'touchstart',
@@ -87,7 +83,6 @@ export class TimelineManager {
       { passive: true }
     );
 
-    // Keyboard fallback
     window.addEventListener('keydown', (e) => {
       const step = e.shiftKey ? 0.08 : 0.035;
       if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
@@ -144,7 +139,11 @@ export class TimelineManager {
     return this.phase;
   }
 
-  /** Derived cinematic knobs from progress */
+  /**
+   * Derived cinematic knobs from progress.
+   * CRITICAL: fold / gravity / heavy vertex chaos stay at 0 until progress ≥ 0.35
+   * so the first flythrough looks solid and real.
+   */
   getKnobs(): {
     fracture: number;
     gravity: number;
@@ -161,13 +160,13 @@ export class TimelineManager {
   } {
     const p = this.progress;
     const s = (a: number, b: number) => clamp((p - a) / (b - a), 0, 1);
-    // Progressive authored arc — large readable beats, not tiny jitters
-    const fracture = easeInOutCubic(s(0.28, 0.52));
-    const gravity = easeInOutCubic(s(0.40, 0.58));
-    const fold = easeInOutCubic(s(0.48, 0.68));
-    const ghost = easeInOutCubic(s(0.56, 0.76));
-    const dissolve = easeInOutCubic(s(0.80, 0.92));
-    const core = easeInOutCubic(s(0.70, 0.88));
+    // Early arc is clean establishing + canyon. Chaos only after trust earned.
+    const fracture = p < 0.36 ? 0 : easeInOutCubic(s(0.36, 0.55));
+    const gravity = p < 0.45 ? 0 : easeInOutCubic(s(0.45, 0.62));
+    const fold = p < 0.52 ? 0 : easeInOutCubic(s(0.52, 0.70));
+    const ghost = p < 0.58 ? 0 : easeInOutCubic(s(0.58, 0.78));
+    const dissolve = easeInOutCubic(s(0.82, 0.93));
+    const core = easeInOutCubic(s(0.72, 0.88));
     const silence = easeInOutCubic(s(0.89, 0.95));
     const finale = easeInOutCubic(s(0.93, 1.0));
     const distort = Math.max(fracture * 0.5, ghost * 0.8, dissolve);

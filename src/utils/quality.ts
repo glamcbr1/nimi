@@ -11,12 +11,13 @@ export interface QualitySettings {
   aa: boolean;
 }
 
+/** Composition > density — counts are towers, not mush. */
 export const QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
   ULTRA: {
     dpr: 1.75,
-    buildingCount: 2800,
-    trafficCount: 180,
-    rainCount: 8000,
+    buildingCount: 1600,
+    trafficCount: 160,
+    rainCount: 7000,
     bloom: true,
     shadows: false,
     pixelRatioCap: 2,
@@ -24,9 +25,9 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
   },
   HIGH: {
     dpr: 1.35,
-    buildingCount: 1800,
-    trafficCount: 120,
-    rainCount: 5000,
+    buildingCount: 1100,
+    trafficCount: 110,
+    rainCount: 4500,
     bloom: true,
     shadows: false,
     pixelRatioCap: 1.75,
@@ -34,9 +35,9 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
   },
   MEDIUM: {
     dpr: 1.1,
-    buildingCount: 1000,
-    trafficCount: 60,
-    rainCount: 2500,
+    buildingCount: 700,
+    trafficCount: 55,
+    rainCount: 2200,
     bloom: true,
     shadows: false,
     pixelRatioCap: 1.25,
@@ -44,9 +45,9 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
   },
   LOW: {
     dpr: 0.85,
-    buildingCount: 500,
-    trafficCount: 30,
-    rainCount: 800,
+    buildingCount: 380,
+    trafficCount: 28,
+    rainCount: 700,
     bloom: false,
     shadows: false,
     pixelRatioCap: 1,
